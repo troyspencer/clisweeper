@@ -67,9 +67,8 @@ func playGame(config Configuration) {
 		Bg: termloop.ColorDefault,
 	})
 
-
 	// create field
-	field := minefield.New(config.tilesW, config.tilesH)
+	field := minefield.New(config.tilesW, config.tilesH, config.bombs)
 
 	// add background to level
 	level.AddEntity(field.Background)
@@ -90,7 +89,7 @@ func playGame(config Configuration) {
 	game.Screen().SetLevel(level)
 	game.Start()
 }
-
+ 
 
 type Configuration struct {
 	tilesW int
