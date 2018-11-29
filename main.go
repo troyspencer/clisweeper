@@ -33,14 +33,20 @@ func main() {
 		if c.String("size") != "" {
 			num, err := strconv.Atoi(c.String("size"))
 			if err != nil {
-				log.Fatal()
+				log.Fatal("size must be a positive integer")
+			}
+			if num <= 0 {
+				log.Fatal("size must be a positive integer")
 			}
 			config.tilesH, config.tilesW = num, num
 		}
 		if c.String("bombs") != "" {
 			num, err := strconv.Atoi(c.String("bombs"))
 			if err != nil {
-				log.Fatal()
+				log.Fatal("bombs must be a positive integer")
+			}
+			if num <= 0 {
+				log.Fatal("bombs must be a positive integer")
 			}
 			config.bombs = num
 		}

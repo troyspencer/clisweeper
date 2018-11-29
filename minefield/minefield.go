@@ -8,7 +8,7 @@ import (
 // Field holds the tiles, the selected tile, and the background
 type Field struct {
 	Tiles        [][]*minetile.Tile
-	SelectedTile minetile.Position
+	SelectedTile *minetile.Tile
 	Background   *termloop.Rectangle
 	Selection    *termloop.Rectangle
 	tileWidth    int
@@ -20,27 +20,23 @@ func (field *Field) Tick(event termloop.Event) {
 	if event.Type == termloop.EventKey {
 		switch event.Key {
 		case termloop.KeyArrowRight:
-			field.SelectedTile.X++
-			if field.SelectedTile.X >= len(field.Tiles[0]) {
-				field.SelectedTile.X = len(field.Tiles[0]) - 1
+			if field.SelectedTile.X < len(field.Tiles)-1 {
+				field.SelectedTile = field.Tiles[field.SelectedTile.X+1][field.SelectedTile.Y]
 			}
 		case termloop.KeyArrowLeft:
-			field.SelectedTile.X--
-			if field.SelectedTile.X < 0 {
-				field.SelectedTile.X = 0
+			if field.SelectedTile.X > 0 {
+				field.SelectedTile = field.Tiles[field.SelectedTile.X-1][field.SelectedTile.Y]
 			}
 		case termloop.KeyArrowUp:
-			field.SelectedTile.Y--
-			if field.SelectedTile.Y < 0 {
-				field.SelectedTile.Y = 0
+			if field.SelectedTile.Y > 0 {
+				field.SelectedTile = field.Tiles[field.SelectedTile.X][field.SelectedTile.Y-1]
 			}
 		case termloop.KeyArrowDown:
-			field.SelectedTile.Y++
-			if field.SelectedTile.Y >= len(field.Tiles[0]) {
-				field.SelectedTile.Y = len(field.Tiles[0]) - 1
+			if field.SelectedTile.Y < len(field.Tiles[0])-1 {
+				field.SelectedTile = field.Tiles[field.SelectedTile.X][field.SelectedTile.Y+1]
 			}
 		case termloop.KeySpace:
-			field.Tiles[field.SelectedTile.X][field.SelectedTile.Y].Flagged = !field.Tiles[field.SelectedTile.X][field.SelectedTile.Y].Flagged
+			field.SelectedTile.Flagged = !field.SelectedTile.Flagged
 		}
 	}
 	for tileX := 0; tileX < len(field.Tiles); tileX++ {
@@ -76,8 +72,6 @@ func New(width int, height int) *Field {
 	field.tileWidth = tileSize * 2
 
 	field.Background = termloop.NewRectangle(0, 0, (width)*tileWidth*2+tileWidth, (height)*tileHeight*2+tileHeight, termloop.ColorBlue)
-	field.SelectedTile = minetile.Position{X: 0, Y: 0}
-
 	field.Selection = termloop.NewRectangle(0, 0, tileWidth*3, tileHeight*3, termloop.ColorRed)
 
 	field.Tiles = make([][]*minetile.Tile, width)
@@ -88,17 +82,16 @@ func New(width int, height int) *Field {
 	// create tiles
 	for tileX := 0; tileX < width; tileX++ {
 		for tileY := 0; tileY < height; tileY++ {
-			// create tile
-			tile := minetile.Tile{
+			// add tile to field
+			field.Tiles[tileX][tileY] = &minetile.Tile{
 				Entity:   termloop.NewEntity(2*tileWidth*(tileX)+tileWidth, 2*tileHeight*(tileY)+tileHeight, tileWidth, tileHeight),
 				Position: minetile.Position{X: tileX, Y: tileY},
 			}
-
-			tile.SetColor(termloop.ColorWhite)
-			// add tile to field
-			field.Tiles[tileX][tileY] = &tile
 		}
 	}
+
+	// set selected tile as tile at (0,0)
+	field.SelectedTile = field.Tiles[0][0]
 
 	return field
 }
