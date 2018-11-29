@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/troyspencer/clisweeper/minefield"
 	"github.com/JoelOtter/termloop"
 	"github.com/urfave/cli"
 )
@@ -60,28 +61,20 @@ func playGame(config Configuration) {
 		Bg: termloop.ColorDefault,
 	})
 
-	tileSize := 1
-	tileWidth := tileSize * 2
-	tileHeight := tileSize
 
-	// Create enough space for tiles surrounded by space
-	level.AddEntity(termloop.NewRectangle(0, 0, (config.tilesW)*tileWidth*2+tileWidth, (config.tilesH)*tileHeight*2+tileHeight, termloop.ColorBlue))
+	// create field
+	field := minefield.New(config.tilesW, config.tilesH)
 
-	// create tiles
-	for tileX := 0; tileX < config.tilesW; tileX++ {
-		for tileY := 0; tileY < config.tilesH; tileY++ {
-			// create tile
-			tile := Tile{
-				Entity: termloop.NewEntity(2*tileWidth*(tileX)+tileWidth, 2*tileHeight*(tileY)+tileHeight, tileWidth, tileHeight),
-			}
-			// draw tile
-			for x := 0; x < tileWidth; x++ {
-				for y := 0; y < tileHeight; y++ {
-					tile.SetCell(x, y, &termloop.Cell{Bg: termloop.ColorWhite})
-				}
-			}
-			// add tile to level
-			level.AddEntity(&tile)
+	// add background to level
+	level.AddEntity(field.Background)
+
+	// add field to level
+	level.AddEntity(field)
+
+	// add tiles to level
+	for i := 0; i < len(field.Tiles); i++ {
+		for j := 0; j < len(field.Tiles[0]); j++ {
+			level.AddEntity(field.Tiles[i][j])
 		}
 	}
 
@@ -89,13 +82,9 @@ func playGame(config Configuration) {
 	game.Start()
 }
 
+
 type Configuration struct {
 	tilesW int
 	tilesH int
 	bombs  int
-}
-
-// Tile is an entity that will be drawn with space on all sides in a grid
-type Tile struct {
-	*termloop.Entity
 }
