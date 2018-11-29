@@ -10,6 +10,9 @@ type Field struct {
 	Tiles        [][]*minetile.Tile
 	SelectedTile minetile.Position
 	Background   *termloop.Rectangle
+	Selection    *termloop.Rectangle
+	tileWidth    int
+	tileHeight   int
 }
 
 // Tick checks for arrow key events, updates SelectedTile, and sets the color of the tiles in the field
@@ -36,15 +39,21 @@ func (field *Field) Tick(event termloop.Event) {
 			if field.SelectedTile.Y >= len(field.Tiles[0]) {
 				field.SelectedTile.Y = len(field.Tiles[0]) - 1
 			}
+		case termloop.KeySpace:
+			field.Tiles[field.SelectedTile.X][field.SelectedTile.Y].Flagged = !field.Tiles[field.SelectedTile.X][field.SelectedTile.Y].Flagged
 		}
 	}
 	for tileX := 0; tileX < len(field.Tiles); tileX++ {
 		for tileY := 0; tileY < len(field.Tiles[0]); tileY++ {
-			field.Tiles[tileX][tileY].SetColor(termloop.ColorWhite)
+			if field.Tiles[tileX][tileY].Flagged {
+				field.Tiles[tileX][tileY].SetColor(termloop.ColorGreen)
+			} else {
+				field.Tiles[tileX][tileY].SetColor(termloop.ColorWhite)
+			}
 		}
 	}
 
-	field.Tiles[field.SelectedTile.X][field.SelectedTile.Y].SetColor(termloop.ColorRed)
+	field.Selection.SetPosition(field.SelectedTile.X*field.tileWidth*2, field.SelectedTile.Y*field.tileHeight*2)
 
 }
 
@@ -63,8 +72,13 @@ func New(width int, height int) *Field {
 
 	field := &Field{}
 
+	field.tileHeight = tileSize
+	field.tileWidth = tileSize * 2
+
 	field.Background = termloop.NewRectangle(0, 0, (width)*tileWidth*2+tileWidth, (height)*tileHeight*2+tileHeight, termloop.ColorBlue)
 	field.SelectedTile = minetile.Position{X: 0, Y: 0}
+
+	field.Selection = termloop.NewRectangle(0, 0, tileWidth*3, tileHeight*3, termloop.ColorRed)
 
 	field.Tiles = make([][]*minetile.Tile, width)
 	for column := range field.Tiles {

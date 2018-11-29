@@ -71,6 +71,9 @@ func playGame(config Configuration) {
 	// add field to level
 	level.AddEntity(field)
 
+	// add selection to level
+	level.AddEntity(field.Selection)
+
 	// add tiles to level
 	for i := 0; i < len(field.Tiles); i++ {
 		for j := 0; j < len(field.Tiles[0]); j++ {

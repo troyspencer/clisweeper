@@ -11,7 +11,8 @@ type Position struct {
 type Tile struct {
 	*termloop.Entity
 	Position
-	Color termloop.Attr
+	Color   termloop.Attr
+	Flagged bool
 }
 
 // SetColor sets the color of the tile, to be drawn on the next Tick call
