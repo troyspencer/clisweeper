@@ -1,4 +1,4 @@
-package minetile
+package minefield
 
 import (
 	"strconv"

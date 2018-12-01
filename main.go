@@ -25,10 +25,11 @@ func main() {
 		},
 	}
 	app.Action = func(c *cli.Context) error {
-		config := Configuration{}
-		config.tilesH = 10
-		config.tilesW = 10
-		config.bombs = 20
+		config := minefield.Configuration{
+			Height: 10,
+			Width: 10,
+			Bombs: 20,
+		}
 
 		if c.String("size") != "" {
 			num, err := strconv.Atoi(c.String("size"))
@@ -38,7 +39,10 @@ func main() {
 			if num <= 0 {
 				log.Fatal("size must be a positive integer")
 			}
-			config.tilesH, config.tilesW = num, num
+			config.Height, config.Width = num, num
+
+			// set bombs to be 1/5 of total tiles if unset in -bombs
+			config.Bombs = config.Height * config.Width / 5
 		}
 		if c.String("bombs") != "" {
 			num, err := strconv.Atoi(c.String("bombs"))
@@ -48,7 +52,7 @@ func main() {
 			if num <= 0 {
 				log.Fatal("bombs must be a positive integer")
 			}
-			config.bombs = num
+			config.Bombs = num
 		}
 
 		playGame(config)
@@ -61,14 +65,14 @@ func main() {
 	}
 }
 
-func playGame(config Configuration) {
+func playGame(config minefield.Configuration) {
 	game := termloop.NewGame()
 	level := termloop.NewBaseLevel(termloop.Cell{
 		Bg: termloop.ColorDefault,
 	})
 
 	// create field
-	field := minefield.New(config.tilesW, config.tilesH, config.bombs)
+	field := minefield.New(config)
 
 	// add background to level
 	level.AddEntity(field.Background)
@@ -90,9 +94,3 @@ func playGame(config Configuration) {
 	game.Start()
 }
  
-
-type Configuration struct {
-	tilesW int
-	tilesH int
-	bombs  int
-}
