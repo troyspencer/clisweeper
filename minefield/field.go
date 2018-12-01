@@ -7,58 +7,37 @@ import (
 	"github.com/JoelOtter/termloop"
 )
 
-type Configuration struct {
-	Width  int
-	Height int
-	Bombs  int
-}
-
 // Field holds the tiles, the selected tile, and the background
 type Field struct {
 	Tiles        [][]*Tile
 	SelectedTile *Tile
-	Background   *termloop.Rectangle
 	Selection    *termloop.Rectangle
-	tileWidth    int
-	tileHeight   int
+	Level        *termloop.BaseLevel
+	Height       int
+	Width        int
+	Bombs        int
+	Zoom         int
+	GameComplete bool
 }
 
 // New initializes a background entity, tile entities, and the selected tile, then returns the collected fields in a Field struct pointer
-func New(config Configuration) *Field {
-	tileSize := 2
-	tileWidth := tileSize * 2
-	tileHeight := tileSize
+func NewLevel(height int, width int, bombs int, zoom int) *termloop.BaseLevel {
 
-	field := &Field{}
+	level := termloop.NewBaseLevel(termloop.Cell{
+		Bg: termloop.ColorDefault,
+	})
 
-	field.tileHeight = tileSize
-	field.tileWidth = tileSize * 2
-
-	field.Background = termloop.NewRectangle(0, 0, (config.Width)*tileWidth*2+tileWidth, (config.Height)*tileHeight*2+tileHeight, termloop.ColorBlue)
-	field.Selection = termloop.NewRectangle(0, 0, tileWidth*3, tileHeight*3, termloop.ColorCyan)
-
-	field.Tiles = make([][]*Tile, config.Width)
-	for column := range field.Tiles {
-		field.Tiles[column] = make([]*Tile, config.Height)
+	field := &Field{
+		Level:  level,
+		Height: height,
+		Width:  width,
+		Bombs:  bombs,
+		Zoom:   zoom,
 	}
 
-	// create tiles
-	for tileX := 0; tileX < config.Width; tileX++ {
-		for tileY := 0; tileY < config.Height; tileY++ {
-			// add tile to field
-			field.Tiles[tileX][tileY] = &Tile{
-				Entity:   termloop.NewEntity(2*tileWidth*(tileX)+tileWidth, 2*tileHeight*(tileY)+tileHeight, tileWidth, tileHeight),
-				Position: Position{X: tileX, Y: tileY},
-			}
-		}
-	}
+	field.populateLevel(field.Level)
 
-	field.setBombs(config.Bombs)
-
-	// set selected tile as tile at (0,0)
-	field.SelectedTile = field.Tiles[0][0]
-
-	return field
+	return level
 }
 
 // Tick checks for arrow key events, updates SelectedTile, and sets the color of the tiles in the field
@@ -84,13 +63,63 @@ func (field *Field) Tick(event termloop.Event) {
 		case termloop.KeySpace:
 			field.SelectedTile.Flagged = !field.SelectedTile.Flagged
 		case termloop.KeyEnter:
-			if field.SelectedTile.Reveal() {
-				field.revealAll()
+			if !field.GameComplete {
+				if field.SelectedTile.Reveal() {
+					field.revealBombs()
+					field.GameComplete = true
+				}
+			} else {
+				field.populateLevel(field.Level)
 			}
+
 		}
 	}
 
-	field.Selection.SetPosition(field.SelectedTile.X*field.tileWidth*2, field.SelectedTile.Y*field.tileHeight*2)
+	field.Selection.SetPosition(field.SelectedTile.X*field.Zoom*4, field.SelectedTile.Y*field.Zoom*2)
+}
+
+func (field *Field) populateLevel(level *termloop.BaseLevel) {
+	level.Entities = []termloop.Drawable{}
+
+	tileWidth := field.Zoom * 2
+	tileHeight := field.Zoom
+
+	// add background to level
+	level.AddEntity(termloop.NewRectangle(0, 0, (field.Width)*tileWidth*2+tileWidth, (field.Height)*tileHeight*2+tileHeight, termloop.ColorBlue))
+
+	// add field to level
+	level.AddEntity(field)
+
+	field.Selection = termloop.NewRectangle(0, 0, tileWidth*3, tileHeight*3, termloop.ColorCyan)
+
+	// add selection to level
+	level.AddEntity(field.Selection)
+
+	field.Tiles = make([][]*Tile, field.Width)
+	for column := range field.Tiles {
+		field.Tiles[column] = make([]*Tile, field.Height)
+	}
+
+	// create tiles
+	for tileX := 0; tileX < field.Width; tileX++ {
+		for tileY := 0; tileY < field.Height; tileY++ {
+			// add tile to field
+			tile := &Tile{
+				Entity:   termloop.NewEntity(2*tileWidth*(tileX)+tileWidth, 2*tileHeight*(tileY)+tileHeight, tileWidth, tileHeight),
+				Position: Position{X: tileX, Y: tileY},
+			}
+			field.Tiles[tileX][tileY] = tile
+			level.AddEntity(tile)
+		}
+	}
+
+	// create bombs
+	field.setBombs(field.Bombs)
+
+	// set selected tile as tile at (0,0)
+	field.SelectedTile = field.Tiles[0][0]
+
+	field.GameComplete = false
 }
 
 // Draw is left empty as the field itself does not need to draw,
@@ -149,7 +178,7 @@ func (field *Field) calcBombCounts() {
 	}
 }
 
-func (field *Field) revealAll() {
+func (field *Field) revealBombs() {
 	for x := 0; x < len(field.Tiles); x++ {
 		for y := 0; y < len(field.Tiles[0]); y++ {
 			if field.Tiles[x][y].Bomb {

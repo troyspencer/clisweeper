@@ -25,11 +25,9 @@ func main() {
 		},
 	}
 	app.Action = func(c *cli.Context) error {
-		config := minefield.Configuration{
-			Height: 10,
-			Width: 10,
-			Bombs: 20,
-		}
+		height := 10
+		width := 10
+		bombs := 20
 
 		if c.String("size") != "" {
 			num, err := strconv.Atoi(c.String("size"))
@@ -39,10 +37,11 @@ func main() {
 			if num <= 0 {
 				log.Fatal("size must be a positive integer")
 			}
-			config.Height, config.Width = num, num
+			height, width = num, num
+
 
 			// set bombs to be 1/5 of total tiles if unset in -bombs
-			config.Bombs = config.Height * config.Width / 5
+			bombs= width * width / 5
 		}
 		if c.String("bombs") != "" {
 			num, err := strconv.Atoi(c.String("bombs"))
@@ -52,10 +51,12 @@ func main() {
 			if num <= 0 {
 				log.Fatal("bombs must be a positive integer")
 			}
-			config.Bombs = num
+			bombs = num
 		}
 
-		playGame(config)
+		game := termloop.NewGame()
+		game.Screen().SetLevel(minefield.NewLevel(height, width, bombs, 1))
+		game.Start()
 		return nil
 	}
 
@@ -64,33 +65,3 @@ func main() {
 		log.Fatal(err)
 	}
 }
-
-func playGame(config minefield.Configuration) {
-	game := termloop.NewGame()
-	level := termloop.NewBaseLevel(termloop.Cell{
-		Bg: termloop.ColorDefault,
-	})
-
-	// create field
-	field := minefield.New(config)
-
-	// add background to level
-	level.AddEntity(field.Background)
-
-	// add field to level
-	level.AddEntity(field)
-
-	// add selection to level
-	level.AddEntity(field.Selection)
-
-	// add tiles to level
-	for i := 0; i < len(field.Tiles); i++ {
-		for j := 0; j < len(field.Tiles[0]); j++ {
-			level.AddEntity(field.Tiles[i][j])
-		}
-	}
-
-	game.Screen().SetLevel(level)
-	game.Start()
-}
- 
